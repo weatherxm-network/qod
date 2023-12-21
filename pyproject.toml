@@ -1,0 +1,336 @@
+[tool.poetry]
+name = "obc_sqc"
+version = "0.1.0"
+description = "Quality of Data repository"
+authors = ["George Stamatakis <gstamatakis@weatherxm.com>"]
+maintainers = ["George Stamatakis <gstamatakis@weatherxm.com>"]
+readme = "README.md"
+packages = [
+    { include = "obc_sqc", from = "src" },
+]
+repository = "https://github.com/WeatherXM/wxm-qod"
+documentation = "https://outline.weatherxm.com/doc/quality-of-data-qod-CO0I7qALYQ"
+
+[tool.poetry.plugins."poetry.plugin"]
+
+# Requirements
+[tool.poetry.dependencies]
+python = ">=3.10.0, <3.11"
+
+pandas = "1.5.1"
+numpy = "1.23.5"
+python-dateutil = "2.8.2"
+pytz = "2021.1"
+six = "1.16.0"
+awswrangler = {version = "3.4.1", extras=['opensearch']}
+pyarrow = "10.0.0"
+packaging = "23.0"
+opensearch-py = "2.4.1"
+urllib3 = "1.26.18"
+
+# TODO Some dependencies can be removed
+[tool.poetry.group.local.dependencies]
+awswrangler = "3.4.1"
+python = ">=3.10.0, <3.11"
+pandas = "1.5.1"
+python-dateutil = "2.8.2"
+pytz = "2021.1"
+six = "1.16.0"
+pyarrow = "10.0.0"
+packaging = "23.0"
+mlflow = "2.6.0"
+
+[tool.poetry.group.mlflow.dependencies]
+mlflow = {version="2.6.0",extras = ['all']}
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "3.3.1"
+
+[tool.poetry.group.test.dependencies]
+pre-commit = "3.3.1"
+pytest-cov = "4.0.0"
+pytest-mock = "3.12.0"
+pytest-asyncio = "*"
+pytest-runner = "*"
+pytest = "7.3.1"
+pytest-github-actions-annotate-failures = "*"
+scalene = "1.5.31.1"
+snakeviz = "2.2.0"
+
+[tool.poetry.group.typing.dependencies]
+mypy = "1.6.1"
+types-requests = "2.31.0.6"
+pandas-stubs = "*"
+ruff = "0.1.4"
+
+# only used in github actions
+[tool.poetry.group.github-actions]
+optional = true
+
+[tool.poetry.group.github-actions.dependencies]
+pytest-github-actions-annotate-failures = "0.1.7"
+
+# CLI scripts
+[tool.poetry.scripts]
+file = "src.obc_sqc.iface.file_model_inference:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+unfixable = []
+preview=true
+
+exclude = [
+    "src/obc_sqc/iface/model_wrapper.py",
+]
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+extend-select = [
+    "A","B","C","D",
+    # pyflakes
+    "F",
+    # pycodestyle
+    "E", "W",
+    # flake8-2020
+    "YTT",
+    # flake8-bugbear
+    "B",
+    # flake8-quotes
+    "Q",
+    # flake8-debugger
+    "T10",
+    # flake8-gettext
+    "INT",
+    # pylint
+    "PL",
+    # misc lints
+    "PIE",
+    # flake8-pyi
+    "PYI",
+    # tidy imports
+    "TID",
+    # implicit string concatenation
+    "ISC",
+    # type-checking imports
+    "TCH",
+    # comprehensions
+    "C4",
+    # pygrep-hooks
+    "PGH",
+    # Ruff-specific rules
+    "RUF",
+    # flake8-bandit: exec-builtin
+    "S102",
+    # numpy-legacy-random
+    "NPY002",
+    # Perflint
+    "PERF",
+    # flynt
+    "FLY",
+    # flake8-logging-format
+    "G",
+    # pandas-vet (PD)
+    "PD",
+    # NumPy-specific rules
+    "NPY",
+    # Airflow
+    "AIR"
+]
+
+ignore = [
+    'ISC001',
+    "D401",
+    "D404",
+    "D100",
+    "D211",
+    "D213",
+    "D104",
+    "D203",
+    "PD901",
+    "PLR6301",
+    "PLR0913",
+]
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --strict-config --capture=no --durations=50"
+empty_parameter_set_mark = "fail_at_collect"
+xfail_strict = true
+testpaths = "tests"
+doctest_optionflags = [
+    "NORMALIZE_WHITESPACE",
+    "IGNORE_EXCEPTION_DETAIL",
+    "ELLIPSIS",
+]
+filterwarnings = [
+    "error::ResourceWarning",
+]
+markers = [
+    "single_cpu: tests that should run on a single cpu only",
+    "slow: mark a test as slow",
+    "network: mark a test as network",
+    "db: tests requiring a database (mysql or postgres)",
+    "clipboard: mark a pd.read_clipboard test",
+    "arm_slow: mark a test as slow for arm64 architecture",
+    "arraymanager: mark a test to run with ArrayManager enabled",
+]
+asyncio_mode = "strict"
+
+
+[tool.black]
+preview = true
+line-length = 120
+target-version = ['py310']
+exclude = '''
+(
+    asv_bench/env
+  | \.egg
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.nox
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | setup.py
+)
+'''
+
+[tool.mypy]
+plugins = [
+    "numpy.typing.mypy_plugin"
+]
+files = ["."]
+namespace_packages = true
+explicit_package_bases = false
+strict = true
+enable_error_code = [
+    "ignore-without-code",
+    "redundant-expr",
+    "truthy-bool",
+]
+exclude = [
+    "tests/obc_sqc/fixtures/__init__.py",
+    "tests/obc_sqc/__init__.py",
+    "tests/obc_sqc/conftest.py",
+    "src/obc_sqc/iface/__init__.py",
+    "src/obc_sqc/iface/direct_model_inference.py",
+    "src/obc_sqc/iface/mlflow_model_inference.py",
+    "src/obc_sqc/iface/model_wrapper.py",
+    "src/obc_sqc/iface/register_model.py",
+    "src/obc_sqc/model/__init__.py",
+    "src/obc_sqc/model/annotation_utils.py",
+    "src/obc_sqc/model/constant_data_check.py",
+    "src/obc_sqc/model/filling_ignoring_period.py",
+    "src/obc_sqc/model/initial_params.py",
+    "src/obc_sqc/model/minute_averaging.py",
+    "src/obc_sqc/model/obc_sqc_driver.py",
+    "src/obc_sqc/model/raw_data_checks.py",
+    "src/obc_sqc/schema/__init__.py",
+    "src/obc_sqc/schema/schema.py",
+]
+
+ignore_missing_imports = true
+follow_imports = "normal"
+follow_imports_for_stubs = false
+no_site_packages = false
+no_silence_site_packages = false
+# Platform configuration
+python_version = "3.10"
+# Disallow dynamic typing
+disallow_any_unimported = false # TODO
+disallow_any_expr = false # TODO
+disallow_any_decorated = false # TODO
+disallow_any_explicit = false # TODO
+disallow_any_generics = false # TODO
+disallow_subclassing_any = false # TODO
+# Untyped definitions and calls
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+# None and Optional handling
+no_implicit_optional = true
+strict_optional = true
+# Configuring warnings
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_return_any = false # TODO
+warn_unreachable = false # GH#27396
+# Suppressing errors
+ignore_errors = false
+# Miscellaneous strictness flags
+allow_untyped_globals = false
+allow_redefinition = false
+local_partial_types = false
+implicit_reexport = true
+strict_equality = true
+# Configuring error messages
+show_error_context = false
+show_column_numbers = false
+show_error_codes = true
+
+[tool.pyright]
+pythonVersion = "3.10"
+typeCheckingMode = "basic"
+useLibraryCodeForTypes = false
+include = ["src", "tests"]
+# enable subset of "strict"
+reportDuplicateImport = true
+reportInconsistentConstructor = true
+reportInvalidStubStatement = true
+reportOverlappingOverload = true
+reportPropertyTypeMismatch = true
+reportUntypedClassDecorator = true
+reportUntypedFunctionDecorator = true
+reportUntypedNamedTuple = true
+reportUnusedImport = true
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+ignore_errors = false
+show_missing = true
+exclude_lines = [
+    # Have to re-enable the standard pragma
+    "pragma: no cover",
+    # Don't complain about missing debug-only code:s
+    "def __repr__",
+    "if self.debug",
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "AbstractMethodError",
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[tool.coverage.html]
+directory = "coverage_html_report"
