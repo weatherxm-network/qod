@@ -62,3 +62,8 @@ bacalhau docker run \
   --day2 /input_2023_12_14/w_tst1/data/1702936591988229.parquet \
   --output_file_path /outputs/result
 ```
+
+You can see an example out put by fetching the results:
+```bash
+bacalhau get bf059011-e744-40a0-9145-137d6e0803e4
+```
