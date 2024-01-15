@@ -14,7 +14,7 @@ QoD involves a series of techniques and processes designed to help us distinguis
    - Comparative Quality Control (CQC) (coming in QoD v1.3)
 
 3. Deployment status
-   - Indoor Station Detector (ISD) (since Qod v1.1)
+   - Indoor Station Detector (ISD) (coming in QoD v1.1)
    - Solar Obstacle Detector (SOD) (coming in QoD v1.2)
    - Wind Obstacle Detector (WOD) (TBD)
 
