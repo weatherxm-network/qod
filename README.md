@@ -1,10 +1,28 @@
 # WeatherXM QoD
 
-## Download datasets
+## Intro
+
+WeatherXM's QoD (Quality-of-Data) is the algorithm that evaluates the quality of weather data provided by the network's weather stations. The calculated QoD score indicates the confidence level in the quality of the weather data received from a station. We need meaningful and usable data and the QoD score is an attempt to quantify this metric. The end goal is to encourage weather station owners to do their best to comply with the Network's guidelines in order to consistently achieve the best QoD score possible.
+
+QoD involves a series of techniques and processes designed to help us distinguish between expected and unexpected data behaviors. This mechanism includes the following 3 control points and their respective checks:
+
+1. Self Check
+   - Out-of-Bounds Check (OBC) (since QoD v1.0)
+   - Self Quality Check (SQC) (since QoD v1.0)
+
+2. Reference Check
+   - Comparative Quality Control (CQC) (coming in QoD v1.3)
+
+3. Deployment status
+   - Indoor Station Detector (ISD) (since Qod v1.1)
+   - Solar Obstacle Detector (SOD) (coming in QoD v1.2)
+   - Wind Obstacle Detector (WOD) (TBD)
+
+## Prerequisites
 
 To run the QoD algorithm for a specific date you you will need to provide the data for this and the previous day. Datasets have been upload to Filecoin via [Basin](https://github.com/tablelandnetwork/basin-cli) under the publication `w_tst1.data` (the publication will change for production) by running `basin publication deals --publication w_tst1.data`. You can find all available data using Basin's CLI and running `basin publication deals --publication w_tst1.data`.
 
-## Local Docker run
+## Running on Docker (locally)
 
 ```bash
 docker build -t wxm-qod:local .
