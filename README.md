@@ -4,6 +4,10 @@
 
 WeatherXM's QoD (Quality-of-Data) is the algorithm that evaluates the quality of weather data provided by the network's weather stations. The calculated QoD score indicates the confidence level in the quality of the weather data received from a station. We need meaningful and usable data and the QoD score is an attempt to quantify this metric. The end goal is to encourage weather station owners to do their best to comply with the Network's guidelines in order to consistently achieve the best QoD score possible.
 
+The QoD score of each station is an important parameter that controls its daily rewards, along with a few other criteria. Read more about WeatherXM's reward scheme [here](https://docs.weatherxm.com/reward-mechanism).
+
+## How it works
+
 QoD involves a series of techniques and processes designed to help us distinguish between expected and unexpected data behaviors. This mechanism includes the following 3 control points and their respective checks:
 
 1. Self Check
@@ -17,6 +21,8 @@ QoD involves a series of techniques and processes designed to help us distinguis
    - Indoor Station Detector (ISD) (coming in QoD v1.1)
    - Solar Obstacle Detector (SOD) (coming in QoD v1.2)
    - Wind Obstacle Detector (WOD) (TBD)
+  
+Read more about QoD and our rewards program on [docs.weatherxm.com](https://docs.weatherxm.com/project).
 
 ## Prerequisites
 
