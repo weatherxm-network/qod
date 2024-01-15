@@ -17,6 +17,8 @@ QoD involves a series of techniques and processes designed to help us distinguis
    - Indoor Station Detector (ISD) (coming in QoD v1.1)
    - Solar Obstacle Detector (SOD) (coming in QoD v1.2)
    - Wind Obstacle Detector (WOD) (TBD)
+  
+Read more about QoD and our rewards program on [docs.weatherxm.com](https://docs.weatherxm.com/project).
 
 ## Prerequisites
 
