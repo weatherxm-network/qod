@@ -68,7 +68,8 @@ docker run
 ## Running on Bacalhau
 
 ### Requirements
-1. Install Bacalhau based on the [instructions](https://docs.bacalhau.org/getting-started/installation) 
+1. Install Bacalhau based on the [instructions](https://docs.bacalhau.org/getting-started/installation)
+2. Find the CIDs of the datasets for the days you want to run the QoD on https://index.weatherxm.network/
 
 ### Run the Bacalhau job
 
@@ -76,14 +77,14 @@ docker run
 bacalhau docker run \
   --memory 32GB \
   --cpu 12 \
-  -i src=ipfs://bafybeifyaa3hnme72i5zrkw2xvheoucturog7i56moztm5bvxie5xhy2ni,dst=/input_2023_12_13 \
-  -i src=ipfs://bafybeifd4m73uznnvglugkrqll7xlkqncbvxrfhq6bkuezdplwtw4kzaw4,dst=/input_2023_12_14 \
+  -i src=ipfs://bafybeiagzaeyk2cy4bjp5yiejthuvfiulbo34urbqvewvhqevxusg2cfce,dst=/input_2024_02_14.parquet \
+  -i src=ipfs://bafybeia3hbh5eek4vuq7wqe3xwlmtetjmsfyml37q5fwf2pk73uu63es3a,dst=/input_2024_02_15.parquet \
   ghcr.io/weatherxm-network/qod:0.0.1 -- \
   obc_sqc.iface.file_model_inference \
   --device_id 8bf5b8f0-50db-11ed-960b-b351f0b0cc44 \
-  --date "2023-12-14" \
-  --day1 /input_2023_12_13/w_tst1/data/1702936551948979.parquet \
-  --day2 /input_2023_12_14/w_tst1/data/1702936591988229.parquet \
+  --date "2024-02-15" \
+  --day1 /input_2024_02_14.parquet \
+  --day2 /input_2024_02_15.parquet \
   --output_file_path /outputs/result
 ```
 
