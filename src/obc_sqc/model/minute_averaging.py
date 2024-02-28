@@ -664,6 +664,4 @@ class MinuteAveraging:
             minute_averaging, availability_threshold, preprocess_time_window
         )
 
-        #if parameter=='humidity':
-        #    fnl_df.to_csv(f"minute.csv", index=True)
         return fnl_df, minute_averaging
