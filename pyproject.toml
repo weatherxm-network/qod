@@ -72,8 +72,6 @@ pytest-github-actions-annotate-failures = "0.1.7"
 
 # CLI scripts
 [tool.poetry.scripts]
-local = "src.obc_sqc.iface.direct_model_inference:main"
-register = "src.obc_sqc.iface.register_model:main"
 file = "src.obc_sqc.iface.file_model_inference:main"
 
 [build-system]
@@ -238,15 +236,17 @@ exclude = [
     "tests/obc_sqc/conftest.py",
     "src/obc_sqc/iface/__init__.py",
     "src/obc_sqc/iface/direct_model_inference.py",
-    "src/obc_sqc/iface/file_model_inference.py",
     "src/obc_sqc/iface/mlflow_model_inference.py",
     "src/obc_sqc/iface/model_wrapper.py",
     "src/obc_sqc/iface/register_model.py",
     "src/obc_sqc/model/__init__.py",
     "src/obc_sqc/model/annotation_utils.py",
+    "src/obc_sqc/model/constant_data_check.py",
     "src/obc_sqc/model/filling_ignoring_period.py",
     "src/obc_sqc/model/initial_params.py",
+    "src/obc_sqc/model/minute_averaging.py",
     "src/obc_sqc/model/obc_sqc_driver.py",
+    "src/obc_sqc/model/raw_data_checks.py",
     "src/obc_sqc/schema/__init__.py",
     "src/obc_sqc/schema/schema.py",
 ]
