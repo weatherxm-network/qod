@@ -3,78 +3,72 @@ import pandas as pd
 from datetime import timedelta
 
 
-class AnnotationUtils:  # noqa: D101
+class AnnotationUtils:
+    """Functions used for faulty data annotation."""
+
     @staticmethod
-    def text_annotation(fnl_df, time_window_constant, time_window_constant_max):
-        """This algo corresponds the arithmetic with a text annotation.
+    def text_annotation(fnl_df: pd.DataFrame) -> pd.DataFrame:
+        """Matches the arithmetic with a text annotation.
+
         We do not include ann_no_datum annotation, because we finally want to show an annotation in minute level
-        only when the minute average was not calculated. So, this is annotated by def update_annotation
-        If more than one annotation are available for one timeslot, all text annotations are presented.
+        only when the minute average was not calculated. So, this is annotated by update_annotation().
+        If more than one annotations are available for one timeslot, all text annotations are presented.
 
-        fnl_df (df): the resulting df from the "raw_data_suspicious_check" def
-        time_window_constant (int): the time window for rolling window checking constant values within it [in minutes]
+        Args:
+        ----
+            fnl_df (pd.DataFrame): the resulting DataFrame from raw_data_suspicious_check()
 
-        result (df): the input df with an extra column "annotation" with text description of annotation
-        """  # noqa: D202, D205
+        Returns:
+        -------
+            pd.DataFrame: the input DataFrame with an extra column "annotation" containing a text description
+                            of the annotation
+        """
+        delim: str = ","
+
+        conditions: dict[str, str] = {
+            "obc": "OBC",
+            "invalid_datum": "SPIKE_INST",
+            "unidentified_spike": "UNIDENTIFIED_SPIKE",
+            "no_datum": "NO_DATA",
+            "constant": "SHORT_CONST",
+            "constant_long": "LONG_CONST",
+            "constant_frozen": "FROZEN_SENSOR",
+        }
 
         # Create boolean masks for each condition
-        mask_obc = fnl_df["ann_obc"] > 0
-        mask_invalid_datum = fnl_df["ann_invalid_datum"] > 0
-        mask_no_median = fnl_df["ann_no_median"] > 0
-        mask_no_datum = fnl_df["ann_no_datum"] > 0
-        mask_constant = fnl_df["ann_constant"] > 0
-        mask_constant_max = fnl_df["ann_constant_long"] > 0
-        mask_constant_frozen = fnl_df["ann_constant_frozen"] > 0
+        masks_df: pd.DataFrame = pd.DataFrame({key: fnl_df[f"ann_{key}"] > 0 for key in conditions})
 
-        # Assign corresponding text to each mask
-        text_obc = "OBC"
-        text_invalid_datum = "SPIKES_INST"
-        text_no_median = "NO_MEDIAN"
-        text_no_datum = "NO_DATA"
-        text_constant = "SHORT_CONST"
-        text_constant_max = "LONG_CONST"
-        text_constant_frozen = "FROZEN_SENSOR"
+        # Create a DataFrame with corresponding text values
+        texts_df: pd.DataFrame = pd.DataFrame(
+            {key: f"{value}{delim}" for key, value in conditions.items()}, index=fnl_df.index
+        )
 
-        # Concatenate text for all true conditions
-        delim: str = ","
-        annotation = []
-        for i in range(len(fnl_df)):
-            text = ""
-            if mask_obc[i]:
-                text += text_obc + delim
-            if mask_invalid_datum[i]:
-                text += text_invalid_datum + delim
-            if mask_no_median[i]:
-                text += text_no_median + delim
-            if mask_no_datum[i]:
-                text += text_no_datum + delim
-            if mask_constant[i]:
-                text += text_constant + delim
-            if mask_constant_max[i]:
-                text += text_constant_max + delim
-            if mask_constant_frozen[i]:
-                text += text_constant_frozen + delim
-            if text.endswith(delim):
-                text = text[:-1]
+        # Multiply each condition column by its corresponding text value (so if condition==0, the text value
+        # in the corresponding column is empty)
+        annotation_df: pd.DataFrame = masks_df * texts_df
 
-            annotation.append(text)
-
-        fnl_df["annotation"] = annotation
+        # Concatenate the text values along the columns and remove last delimeter
+        fnl_df["annotation"] = annotation_df.sum(axis=1).str.rstrip(delim)
 
         return fnl_df
 
     @staticmethod
-    def update_ann_text(row, new_text, ann_column):
-        """This def passes into the annotation column the given new_text annotation,
-        when the value in ann_column is not 0.
+    def update_ann_text(row, new_text, ann_column) -> pd.Series:
+        """Passes into the annotation column the given new_text annotation.
 
-        new_text (str): the annotation text
-        ann_column (str): the annotation column that needs to be updated
+        Only does so when the value in ann_column is != 0.
 
-        result (float): the vector average wind speed
-        """  # noqa: D202, D205
+        Args:
+        ----
+            row (pd.Series): the DataFrae row to be updated
+            new_text (str): the annotation text
+            ann_column (str): the annotation column that needs to be updated
 
-        if row[f"{ann_column}"] > 0 and new_text not in row["annotation"]:
+        Returns:
+        -------
+            pd.Series: the updated row
+        """
+        if row[ann_column] > 0 and new_text not in row["annotation"]:
             if len(row["annotation"]) > 0:
                 row["annotation"] += f",{new_text}"
             else:
@@ -89,7 +83,7 @@ class AnnotationUtils:  # noqa: D101
     ) -> pd.Series:
         """Calculates the percentages of faulty data for each annotation type.
 
-            Includes these in a list along with the annotation type str, using the
+            Includes them in a list along with the annotation type str, using the
             following format: [[annotation1, percentage1], [annotation2, percentage2], ...].
 
         Args:
@@ -199,8 +193,8 @@ class AnnotationUtils:  # noqa: D101
         # Raw columns and their fault codes
         selected_columns: dict[str, str] = {
             "ann_obc": "OBC",
-            "ann_invalid_datum": "SPIKES_INST",
-            "ann_no_median": "NO_MEDIAN",
+            "ann_invalid_datum": "SPIKE_INST",
+            "ann_unidentified_spike": "UNIDENTIFIED_SPIKE",
             "ann_no_datum": "NO_DATA",
             "ann_constant": "SHORT_CONST",
             "ann_constant_long": "LONG_CONST",
@@ -217,6 +211,7 @@ class AnnotationUtils:  # noqa: D101
         # Minute columns and their fault codes
         selected_columns = {
             "ann_invalid_datum": "ANOMALOUS_INCREASE",
+            "ann_unidentified_change": "UNIDENTIFIED_ANOMALOUS_CHANGE",
         }
 
         # Filter the minute-averaged DataFrame to include only the last 24hours and selected columns

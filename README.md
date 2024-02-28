@@ -81,9 +81,9 @@ bacalhau docker run \
   --cpu 12 \
   -i src=ipfs://bafybeiagzaeyk2cy4bjp5yiejthuvfiulbo34urbqvewvhqevxusg2cfce,dst=/input_2024_02_14.parquet \
   -i src=ipfs://bafybeia3hbh5eek4vuq7wqe3xwlmtetjmsfyml37q5fwf2pk73uu63es3a,dst=/input_2024_02_15.parquet \
-  ghcr.io/weatherxm-network/qod:0.0.1 -- \
+  ghcr.io/weatherxm-network/qod:0.0.3 -- \
   obc_sqc.iface.file_model_inference \
-  --device_id 8bf5b8f0-50db-11ed-960b-b351f0b0cc44 \
+  --device_id a972a5e0-d8eb-11ec-a651-5fda0296159f \
   --date "2024-02-15" \
   --day1 /input_2024_02_14.parquet \
   --day2 /input_2024_02_15.parquet \

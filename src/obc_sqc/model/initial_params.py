@@ -13,7 +13,7 @@ class InitialParams:  # noqa: D101
         result: a series of variables and lists that correspond to a certain weather station model.
             See the description of each parameter in the next lines after the #"""  # noqa: D202, D208, D209, D400, D415
 
-        ann_no_median = 2  # Annotation where no median has been calculated
+        ann_unident_spk = 2  # Annotation where spikes/dips are present but median has not been calculated
         ann_no_datum = 3  # Annotation where no datum is available
         ann_invalid_datum = 4  # Annotation where the datum exists but it's not valid
         ann_constant = 5  # Annotation where data are constant for a certain period of time
@@ -42,7 +42,7 @@ class InitialParams:  # noqa: D101
             ignoring_period = 60
             start_timestamp = "18:00:00"
 
-            # This is the threshold used in the def "check_for_constant_data"
+            # This is the threshold used in the def "constant_data_check"
             # to exclude annotating data as constant when e.g., RH>95%
             rh_threshold = 95
             pr_int = 0.254  # This is the rain gauge resolution [mm]
@@ -69,7 +69,7 @@ class InitialParams:  # noqa: D101
             # pr_hourly_availability = 0.85  # This is the availability threshold for precipitation in the hourly level
 
             # jump thresholds for checking raw data
-            raw_control_thresholds = [5, 2, np.nan, 20, 0.3, 97600, np.nan]
+            raw_control_thresholds = [5, 2, np.nan, 20, 0.8, 97600, np.nan]
 
             # jump thresholds for checking averaged data
             minute_control_thresholds = [10, 3, np.nan, 10, 0.5, 97600, np.nan]
@@ -120,7 +120,7 @@ class InitialParams:  # noqa: D101
             # This is used in constant check [seconds]
             ignoring_period = 180
 
-            # This is the threshold used in the def "check_for_constant_data"
+            # This is the threshold used in the def "constant_data_check"
             # to exclude annotating data as constant when e.g., RH>95%
             rh_threshold = 95
 
@@ -144,13 +144,13 @@ class InitialParams:  # noqa: D101
             # within a certain period is available averaging or rewarding is not possible
             availability_threshold_median = [0.67, 0.67, 0.75, 0.75, 0.67, 0.67, np.nan]
             availability_threshold_m = [
-                0.25,
-                0.25,
-                0.25,
-                0.25,
-                0.25,
-                0.25,
-                0.25,
+                0.9,
+                0.9,
+                0.9,
+                0.9,
+                0.9,
+                0.9,
+                0.9,
             ]  # this is not used in WS2000, it's given only for not breaking the processes
             availability_threshold_h = [
                 0.67,
@@ -165,7 +165,7 @@ class InitialParams:  # noqa: D101
             # pr_hourly_availability = 0.85  # This is the availability threshold for precipitation in the hourly level
 
             # jump thresholds for checking raw data
-            raw_control_thresholds = [10, 3, 10, 10, 0.5, 97600, np.nan]
+            raw_control_thresholds = [10, 3, np.nan, 10, 0.8, 97600, np.nan]
 
             # jump thresholds for checking averaged data
             minute_control_thresholds = [
@@ -249,7 +249,7 @@ class InitialParams:  # noqa: D101
             ]
 
         return (
-            ann_no_median,
+            ann_unident_spk,
             ann_no_datum,
             ann_invalid_datum,
             ann_constant,

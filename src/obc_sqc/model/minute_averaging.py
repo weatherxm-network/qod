@@ -3,7 +3,9 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from typing import Tuple
+from typing import Any, Tuple, Callable
+
+import functools
 
 from obc_sqc.model.annotation_utils import AnnotationUtils
 from obc_sqc.model.averaging_utils import AveragingUtils
@@ -131,21 +133,25 @@ class MinuteAveraging:
         ].round(2)
 
         # calculate the corrected wind speed and wind direction average, based on the annotations
+        function_correct_wind_speed_average: Callable[[pd.DataFrame], float] = functools.partial(
+            AveragingUtils.column_wind_speed_average_using_annotation,
+            availability_threshold=availability_threshold,
+            annotation_col="total_raw_annotation",
+        )
+
         minute_averaging["wind_spd_avg_corrected"] = fnl_df.groupby(
             pd.Grouper(key="utc_datetime", freq=f"{averaging_period}min")
-        ).apply(
-            AveragingUtils.column_wind_speed_average_using_annotation,
+        ).apply(function_correct_wind_speed_average)
+
+        function_correct_wind_direction_average: Callable[[pd.DataFrame], float] = functools.partial(
+            AveragingUtils.column_wind_direction_average_using_annotation,
             availability_threshold=availability_threshold,
             annotation_col="total_raw_annotation",
         )
 
         minute_averaging["wind_dir_avg_corrected"] = fnl_df.groupby(
             pd.Grouper(key="utc_datetime", freq=f"{averaging_period}min")
-        ).apply(
-            AveragingUtils.column_wind_direction_average_using_annotation,
-            availability_threshold=availability_threshold,
-            annotation_col="total_raw_annotation",
-        )
+        ).apply(function_correct_wind_direction_average)
 
         return minute_averaging
 
@@ -265,11 +271,15 @@ class MinuteAveraging:
 
         # calculate average after removing faulty measurements
         # and only if >availability_threshold of the data is available
-        corr_avg: pd.Series = fnl_df.groupby(pd.Grouper(key="utc_datetime", freq=f"{averaging_period}min")).apply(
+        function_correct_average_using_annotation: Callable[[pd.DataFrame], float] = functools.partial(
             AveragingUtils.column_average_using_annotation,
             column=parameter,
             availability_threshold=availability_threshold,
             annotation_col="total_raw_annotation",
+        )
+
+        corr_avg: pd.Series = fnl_df.groupby(pd.Grouper(key="utc_datetime", freq=f"{averaging_period}min")).apply(
+            function_correct_average_using_annotation
         )
 
         # TODO: remove roundings
@@ -289,6 +299,7 @@ class MinuteAveraging:
         control_threshold: float,
         availability_threshold_median: float,
         ann_invalid_datum: int,
+        ann_unident_spk: int,
     ) -> pd.DataFrame:
         """Calculate hour average for other variables.
 
@@ -304,6 +315,7 @@ class MinuteAveraging:
                                                     calculate median only if <67%/75% of timeslots
                                                     within a certain period are available
             ann_invalid_datum (int): the annotation code representing invalid data
+            ann_unident_spk (int): the annotation code representing unidentified spikes/dips
 
         Returns:
         -------
@@ -351,50 +363,57 @@ class MinuteAveraging:
         # creating a new column for annotating unavailable averages
         minute_averaging["ann_invalid_datum"] = 0
 
-        temp: pd.Series = minute_averaging[f"{parameter}_avg"]
-        minute_averaging = minute_averaging.reset_index()
+        # creating a new column for annotating unavailable averages
+        minute_averaging["ann_unidentified_change"] = 0
 
-        # check if difference is larger than the defined threshold
-        for i in range(1, len(temp)):
-            prev_val: float = minute_averaging.loc[i - 1, "median_diff_abs"] if i > 0 else 0
-            curr_val: float = minute_averaging.loc[i, "median_diff_abs"]
-            prev_or_cur_val_is_missing: bool = prev_val is pd.NA or curr_val is pd.NA
+        temp: pd.Series[Any] = minute_averaging[f"{parameter}_avg"]
+        temp_diff: pd.Series[Any] = temp.diff().abs()
 
-            # check if difference of consecutive average values is larger than control_threshold
-            diff: float = abs(temp[i] - temp[i - 1]) if temp[i] is not pd.NA and temp[i - 1] is not pd.NA else pd.NA
+        minute_averaging["ann_jump_couples"] = 0
+        minute_averaging["ann_invalid_datum"] = 0
 
-            if not prev_or_cur_val_is_missing:
-                if diff > control_threshold:
-                    minute_averaging.loc[i, "ann_jump_couples"] = 1
-                    minute_averaging.loc[i - 1, "ann_jump_couples"] = 1
+        # check if difference of consecutive average values is larger than control_threshold
+        mask_diff_larger_than_threshold = temp_diff > control_threshold
+        minute_averaging.loc[mask_diff_larger_than_threshold, "ann_jump_couples"] = 1
+        minute_averaging.loc[mask_diff_larger_than_threshold.shift(-1).fillna(False), "ann_jump_couples"] = 1
 
-                    # in case the difference is large,
-                    # check which abs(value-median) of the couple of observations
-                    # is larger and annotate
-                    # Warning! if median is not available, fnl_df['ann_invalid_datum']=0. However,
-                    # later we will annotate all elements with not available median as invalid
-                    if prev_val > curr_val:
-                        minute_averaging.loc[i - 1, "ann_invalid_datum"] = ann_invalid_datum
-                    elif curr_val > prev_val:
-                        minute_averaging.loc[i, "ann_invalid_datum"] = ann_invalid_datum
+        # in case the difference is large, check which abs(value-median) of the couple of observations
+        # is larger and annotate with "ann_invalid_datum"
+        mask_prev_val_bigger_than_curr = (
+            minute_averaging["median_diff_abs"].shift(1) > minute_averaging["median_diff_abs"]
+        )
+        mask_curr_val_bigger_than_prev = minute_averaging["median_diff_abs"] > minute_averaging[
+            "median_diff_abs"
+        ].shift(1)
 
-            else:
-                minute_averaging.loc[i, "ann_jump_couples"] = 0
-                minute_averaging.loc[i, "ann_invalid_datum"] = 0
+        minute_averaging.loc[
+            (mask_diff_larger_than_threshold & mask_prev_val_bigger_than_curr).shift(-1).fillna(False),
+            "ann_invalid_datum",
+        ] = ann_invalid_datum
+        minute_averaging.loc[
+            (mask_diff_larger_than_threshold & mask_curr_val_bigger_than_prev),
+            "ann_invalid_datum",
+        ] = ann_invalid_datum
 
-            # we also annotate a value as invalid if it's equal to a previous faulty measurement
-            if not prev_or_cur_val_is_missing:
-                if temp[i] == temp[i - 1] and minute_averaging["ann_invalid_datum"][i - 1] == ann_invalid_datum:
-                    minute_averaging.loc[i, "ann_invalid_datum"] = ann_invalid_datum
+        # we also annotate a value as invalid if it's equal to a previous faulty measurement
+        mask_invalid_equal_to_prev = (temp == temp.shift(1)) & (
+            minute_averaging["ann_invalid_datum"].shift(1) == ann_invalid_datum
+        )
+        minute_averaging.loc[mask_invalid_equal_to_prev, "ann_invalid_datum"] = ann_invalid_datum
 
-        minute_averaging = minute_averaging.set_index("utc_datetime")
+        no_median_mask = minute_averaging["rolling_median"].isna()
+
+        # Annotate only when a spike couple is present but median was not calculated
+        minute_averaging.loc[
+            no_median_mask & (minute_averaging["ann_jump_couples"] == 1), "ann_unidentified_change"
+        ] = ann_unident_spk
 
         return minute_averaging
 
     @staticmethod
     def minute_averaging_dataframe_processing(
         minute_averaging: pd.DataFrame, availability_threshold: float, preprocess_time_window: int
-    ):
+    ) -> pd.DataFrame:
         """Various processes regarding the minute averaging dataframe.
 
         Args:
@@ -444,7 +463,11 @@ class MinuteAveraging:
 
         # calculate the percentage of valid/available data within averaging_period
         val_perc_rew = minute_averaging.apply(
-            lambda x: ((x["num_total_slots"] - x["faulty_rewards"]) * 100) / x["num_total_slots"],
+            lambda x: (
+                100
+                if (x["num_total_slots"] - x["faulty_rewards"]) / x["num_total_slots"] > availability_threshold
+                else ((x["num_total_slots"] - x["faulty_rewards"]) * 100) / x["num_total_slots"]
+            ),
             axis=1,
         )
 
@@ -473,17 +496,30 @@ class MinuteAveraging:
             axis=1,
         )
 
+        minute_averaging = minute_averaging.apply(
+            AnnotationUtils.update_ann_text,
+            args=(
+                "UNIDENTIFIED_ANOMALOUS_INCREASE",
+                "ann_unidentified_change",
+            ),
+            axis=1,
+        )
+
         # Make a new column where all faulty elements (for any reason)
         # detected in previous processes are annotated with 1
         minute_averaging["ann_total"] = np.where(
-            (minute_averaging["ann_all_from_raw"] > 0) | (minute_averaging["ann_invalid_datum"] > 0),
+            (minute_averaging["ann_all_from_raw"] > 0)
+            | (minute_averaging["ann_invalid_datum"] > 0)
+            | (minute_averaging["ann_unidentified_change"] > 0),
             1,
             0,
         )
 
         # Make a new column where reward-faulty elements detected in previous processes are annotated with 1
         minute_averaging["ann_total_rewards"] = np.where(
-            (minute_averaging["ann_all_from_raw_rewards"] > 0) | (minute_averaging["ann_invalid_datum"] > 0),
+            (minute_averaging["ann_all_from_raw_rewards"] > 0)
+            | (minute_averaging["ann_invalid_datum"] > 0)
+            | (minute_averaging["ann_unidentified_change"] > 0),
             1,
             0,
         )
@@ -513,6 +549,7 @@ class MinuteAveraging:
 
         # Removing the first 'time_window_median' minutes of data in order to exclude the extra
         # time period required only for median calculation
+        minute_averaging.index = pd.to_datetime(minute_averaging.index)
         cutoff_time = minute_averaging.index[0] + pd.Timedelta(minutes=preprocess_time_window - 1)
         minute_averaging = minute_averaging[minute_averaging.index > cutoff_time]
 
@@ -528,6 +565,7 @@ class MinuteAveraging:
         time_window_median: int,
         control_threshold: float,
         ann_invalid_datum: int,
+        ann_unident_spk: int,
         pr_int: float,
         preprocess_time_window: int,
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -539,14 +577,14 @@ class MinuteAveraging:
         the difference between the 3rd and 4th elements is >3, but the difference of the 4th element from the
         10-min median is larger, and thus the 4th element is faulty.
         Also 6th, 7th and 8th elements will be considered as faulty because they are equal to the latest faulty
-        measurement. In addition, the nan value will be annotated as faulty/invalid. It should be noted that the
-        first 10min data are considered as invalid and no decision can be taken as median cannot be calculated.
-        However, if only 10min data are missing from an entire hour, rewards should be finally awarded. Note that the
-        average of e.g. 01:10:00 is the average of values between 01:09:01-01:10:00.
+        measurement. In addition, the nan value will be annotated as faulty/invalid. It should be noted that
+        if median cannot be calculated due to significant amount of unavailable data, then all the suspicious
+        for spike/dip values will be annotated as faulty. Note that the average of e.g. 01:10:00 is
+        the average of values between 01:09:01-01:10:00.
 
         Args:
         ----
-            fnl_df (pd.DataFrame): the output of check_for_constant_data(), which is a dataframe with a fixed temporal
+            fnl_df (pd.DataFrame): the output of constant_data_check(), which is a dataframe with a fixed temporal
                                     resolution
             parameter (str): the name of the examined parameter e.g. temperature, humidity, wind speed etc.
             averaging_period (int): the desired period for averaging, e.g. we want to calculate 2-minute averages
@@ -557,6 +595,7 @@ class MinuteAveraging:
             time_window_median (int): the time window for rolling median [in minutes]
             control_threshold (float): the threshold to check for jumps in a parameter
             ann_invalid_datum (int): the annotation code for invalid data
+            ann_unident_spk (int): the annotation code for unidentified anomalous increase
             pr_int (float): the resolution of the rain gauge in mm
             preprocess_time_window (int): the time window between start_timestamp and the first timestamp of the current
                                             day [in minutes]
@@ -606,6 +645,7 @@ class MinuteAveraging:
             minute_averaging["median_diff_abs"] = np.nan
             minute_averaging["ann_jump_couples"] = np.nan
             minute_averaging["ann_invalid_datum"] = np.nan
+            minute_averaging["ann_unidentified_change"] = np.nan
 
         # Finding jumps between consecutive minute averages
         else:
@@ -617,6 +657,7 @@ class MinuteAveraging:
                 control_threshold,
                 availability_threshold_median,
                 ann_invalid_datum,
+                ann_unident_spk,
             )
 
         minute_averaging = MinuteAveraging.minute_averaging_dataframe_processing(
