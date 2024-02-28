@@ -79,7 +79,7 @@ docker run
 bacalhau docker run \
   --memory 32GB \
   --cpu 12 \
-	-i src=ipfs://bafybeiagzaeyk2cy4bjp5yiejthuvfiulbo34urbqvewvhqevxusg2cfce,dst=/input_2024_02_14.parquet \
+  -i src=ipfs://bafybeiagzaeyk2cy4bjp5yiejthuvfiulbo34urbqvewvhqevxusg2cfce,dst=/input_2024_02_14.parquet \
   -i src=ipfs://bafybeia3hbh5eek4vuq7wqe3xwlmtetjmsfyml37q5fwf2pk73uu63es3a,dst=/input_2024_02_15.parquet \
   ghcr.io/weatherxm-network/qod:0.0.3 -- \
   obc_sqc.iface.file_model_inference \
