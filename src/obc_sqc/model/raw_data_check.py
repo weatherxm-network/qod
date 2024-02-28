@@ -192,7 +192,6 @@ class RawDataCheck:
             fnl_df = fnl_df.set_index("utc_datetime")
 
         if parameter=='humidity':
-            #fnl_df.to_csv(f"raw.csv", index=True)
             import matplotlib.pyplot as plt
 
             from datetime import timedelta
